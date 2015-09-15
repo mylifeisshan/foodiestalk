@@ -2,6 +2,7 @@ require "open-uri"
 require "json"
 require "pp"
 require "yelp"
+require "./yelp_categories.rb"
 
 puts("Welcome to Foodie Stalk!!!")
 
@@ -73,26 +74,85 @@ def yelp_business(instagram_location)
 	params = {
 		term: instagram_location["name"],
         limit: 1,
-        category_filter: "restaurants,coffee,bars",
+        #category_filter: "restaurants,coffee,bars",
         radius_filter: 100,
     }
 
 	yelp_results = client.search_by_coordinates(coordinates, params)
 	yelp_business = yelp_results.businesses[0]
+	if yelp_business == nil
+		return nil
+	end
+
+	if is_this_business_actually_a_city?(yelp_business, instagram_location["name"])
+		p "ITS A CITY!"
+		return nil
+	end
+	if is_this_business_ridiculously_far_away?(yelp_business)
+		p "TOO FAR!"
+		return nil
+	end
+	if not is_this_business_for_eating?(yelp_business)
+		p "NOT FOOD!"
+		return nil
+	end
+
 	return yelp_business
+
 end
 
 def print_yelp_businesses(posts)
 	posts_with_location = instagram_posts_with_location(posts)
+	food_business = 0
 
 	posts_with_location.each do |post|
 		instagram_location = post["location"]
-		puts "I'm looking up #{instagram_location}"
+		puts "\nInstagram Name: #{instagram_location["name"]}"
 		yelp_business = yelp_business(instagram_location)
-		pp yelp_business
+
+		if yelp_business
+			puts "Yelp Name: #{yelp_business.name}"
+			puts "Location: #{yelp_business.location.display_address}"
+			puts "Distance Away: #{yelp_business.distance}"
+			food_business += 1
+		else
+			puts "No Yelp profile."
+		end
+	end
+	puts "I found #{food_business} food businesses!"
+end
+
+def is_this_business_for_eating?(yelp_business)
+	yelp_business.categories.each do |category|
+		#category = ["Music & DVDs", "musicvideo"]
+		category_id = category[1]
+		if ALL_EATING_CATEGORIES.include?(category_id)
+			return true
+		end
+	end
+	return false
+end
+
+def is_this_business_ridiculously_far_away?(yelp_business)
+	if yelp_business.distance > 100
+		return true
+	else
+		return false
 	end
 end
 
-instagram_username = "mylifeisshan"
+def is_this_business_actually_a_city?(yelp_business, instagram_location_name)
+	possible_city_name = instagram_location_name.split(",")[0]
+	if possible_city_name == yelp_business.location.city
+		return true
+	else
+		return false
+	end
+end
+
+
+instagram_username = ARGV[0]
 posts = instagram_posts(instagram_username)
 print_yelp_businesses(posts)
+
+
