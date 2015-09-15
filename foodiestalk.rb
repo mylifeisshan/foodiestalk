@@ -1,6 +1,7 @@
 require "open-uri"
 require "json"
 require "pp"
+require "yelp"
 
 puts("Welcome to Foodie Stalk!!!")
 
@@ -52,13 +53,46 @@ def instagram_posts_with_location(posts)
 	return posts_with_location
 end
 
-def instagram_location_names(posts)
+def print_instagram_locations(posts)
 	posts_with_location = instagram_posts_with_location(posts)
 	posts_with_location.each {|x| puts x["location"]}
-
 end
 
 
+
+def yelp_business(instagram_location)
+	client = Yelp::Client.new({
+		consumer_key: ENV["YELP_CONSUMER_KEY"],
+  		consumer_secret: ENV["YELP_CONSUMER_SECRET"],
+        token: ENV["YELP_TOKEN"],
+        token_secret: ENV["YELP_TOKEN_SECRET"]
+    })
+
+	coordinates = { latitude: instagram_location["latitude"], longitude: instagram_location["longitude"] }
+
+	params = {
+		term: instagram_location["name"],
+        limit: 1,
+        category_filter: "restaurants,coffee,bars",
+        radius_filter: 100,
+    }
+
+	yelp_results = client.search_by_coordinates(coordinates, params)
+	yelp_business = yelp_results.businesses[0]
+	return yelp_business
+end
+
+def print_yelp_businesses(posts)
+	posts_with_location = instagram_posts_with_location(posts)
+
+	posts_with_location.each do |post|
+		instagram_location = post["location"]
+		puts "I'm looking up #{instagram_location}"
+		yelp_business = yelp_business(instagram_location)
+		pp yelp_business
+	end
+end
+
 instagram_username = "mylifeisshan"
 posts = instagram_posts(instagram_username)
-instagram_location_names(posts)
+print_yelp_businesses(posts)
