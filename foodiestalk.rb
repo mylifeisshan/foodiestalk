@@ -179,6 +179,10 @@ end
 
 
 instagram_username = ARGV[0]
+if instagram_username == nil
+	puts "Who are you stalking?"
+	exit
+end
 posts = instagram_posts(instagram_username)
 print_yelp_businesses(posts)
 
