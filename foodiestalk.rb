@@ -8,6 +8,7 @@ require "./yelp_categories.rb"
 
 puts("Welcome to Foodie Stalk!!!")
 
+DEBUG = false
 $access_token = ENV["INSTAGRAM_ACCESS_TOKEN"]
 
 def instagram_user_id(instagram_username)
@@ -84,31 +85,31 @@ def yelp_business(instagram_location)
 		yelp_business = yelp_results.businesses[0]
 
 	rescue Yelp::Error::UnavailableForLocation
-		p "YELP FAILED US"
+		p "NO YELP API LOCATION" if DEBUG
 		return nil
 	end
 
 
 	if yelp_business == nil
-		p "CAN'T FIND IT ON YELP"
+		p "CAN'T FIND IT ON YELP" if DEBUG
 		return nil
 	end
 
 	if is_this_business_actually_a_city?(yelp_business, instagram_location)
-		p "ITS A CITY!"
+		p "CITY, NOT FOOD PLACE" if DEBUG
 		return nil
 	end
 	if is_this_business_ridiculously_far_away?(yelp_business)
-		p "TOO FAR!"
+		p "TOO FAR AWAY!: #{yelp_business.distance}" if DEBUG
 		return nil
 	end
 	if not is_this_business_for_eating?(yelp_business)
-		p "NOT FOOD!"
+		p "NOT A FOOD BIZ!" if DEBUG
 		return nil
 	end
 
 	if not are_these_the_same_place?(yelp_business, instagram_location)
-		p "NOT THE SAME"
+		p "NAMES DON'T MATCH: #{yelp_business.name}" if DEBUG
 		return nil
 	end
 
@@ -122,19 +123,19 @@ def print_yelp_businesses(posts)
 
 	posts_with_location.each do |post|
 		instagram_location = post["location"]
-		puts "\nInstagram Name: #{instagram_location["name"]}"
+		puts if DEBUG
+		puts "INSTAGRAM INFO: #{instagram_location}" if DEBUG
 		yelp_business = yelp_business(instagram_location)
 
 		if yelp_business != nil
-			puts "\nInstagram Name: #{instagram_location["name"]}"
+			puts if not DEBUG
+			puts "Instagram Name: #{instagram_location["name"]}"
 			puts "Yelp Name: #{yelp_business.name}"
 			puts "Location: #{yelp_business.location.display_address}"
-			puts "Distance Away: #{yelp_business.distance}"
-			yelp_vs_instagram_name = instagram_location["name"].similar(yelp_business.name)
-			puts "Name similarity: #{yelp_vs_instagram_name}"
+			puts "Distance Away: #{yelp_business.distance}" if DEBUG
+			yelp_vs_instagram_name = instagram_location["name"].similar(yelp_business.name) if DEBUG
+			puts "Name similarity: #{yelp_vs_instagram_name}" if DEBUG
 			food_business += 1
-		else
-			puts "No Yelp profile."
 		end
 	end
 	puts "I found #{food_business} food businesses!"
@@ -173,6 +174,7 @@ def are_these_the_same_place?(yelp_business, instagram_location)
 	if yelp_vs_instagram_name >= 40
 		return true
 	else
+		puts "SCORE OF NAMES: #{yelp_vs_instagram_name}" if DEBUG
 		return false
 	end
 end
