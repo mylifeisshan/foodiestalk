@@ -2,6 +2,8 @@ require "open-uri"
 require "json"
 require "pp"
 require "yelp"
+require "similar_text"
+
 require "./yelp_categories.rb"
 
 puts("Welcome to Foodie Stalk!!!")
@@ -84,7 +86,7 @@ def yelp_business(instagram_location)
 		return nil
 	end
 
-	if is_this_business_actually_a_city?(yelp_business, instagram_location["name"])
+	if is_this_business_actually_a_city?(yelp_business, instagram_location)
 		p "ITS A CITY!"
 		return nil
 	end
@@ -94,6 +96,11 @@ def yelp_business(instagram_location)
 	end
 	if not is_this_business_for_eating?(yelp_business)
 		p "NOT FOOD!"
+		return nil
+	end
+
+	if not are_these_the_same_place?(yelp_business, instagram_location)
+		p "NOT THE SAME"
 		return nil
 	end
 
@@ -110,10 +117,13 @@ def print_yelp_businesses(posts)
 		puts "\nInstagram Name: #{instagram_location["name"]}"
 		yelp_business = yelp_business(instagram_location)
 
-		if yelp_business
+		if yelp_business != nil
+			puts "\nInstagram Name: #{instagram_location["name"]}"
 			puts "Yelp Name: #{yelp_business.name}"
 			puts "Location: #{yelp_business.location.display_address}"
 			puts "Distance Away: #{yelp_business.distance}"
+			yelp_vs_instagram_name = instagram_location["name"].similar(yelp_business.name)
+			puts "Name similarity: #{yelp_vs_instagram_name}"
 			food_business += 1
 		else
 			puts "No Yelp profile."
@@ -141,9 +151,18 @@ def is_this_business_ridiculously_far_away?(yelp_business)
 	end
 end
 
-def is_this_business_actually_a_city?(yelp_business, instagram_location_name)
-	possible_city_name = instagram_location_name.split(",")[0]
+def is_this_business_actually_a_city?(yelp_business, instagram_location)
+	possible_city_name = instagram_location["name"].split(",")[0]
 	if possible_city_name == yelp_business.location.city
+		return true
+	else
+		return false
+	end
+end
+
+def are_these_the_same_place?(yelp_business, instagram_location)
+	yelp_vs_instagram_name = instagram_location["name"].similar(yelp_business.name)
+	if yelp_vs_instagram_name >= 40
 		return true
 	else
 		return false
