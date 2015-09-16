@@ -79,10 +79,18 @@ def yelp_business(instagram_location)
         #category_filter: "restaurants,coffee,bars",
         radius_filter: 100,
     }
+    begin
+		yelp_results = client.search_by_coordinates(coordinates, params)
+		yelp_business = yelp_results.businesses[0]
 
-	yelp_results = client.search_by_coordinates(coordinates, params)
-	yelp_business = yelp_results.businesses[0]
+	rescue Yelp::Error::UnavailableForLocation
+		p "YELP FAILED US"
+		return nil
+	end
+
+
 	if yelp_business == nil
+		p "CAN'T FIND IT ON YELP"
 		return nil
 	end
 
